@@ -1,6 +1,5 @@
 #ifndef IO__CBOARD_HPP
 #define IO__CBOARD_HPP
-
 #include <Eigen/Geometry>
 #include <chrono>
 #include <cmath>
@@ -12,6 +11,8 @@
 #include "io/socketcan.hpp"
 #include "tools/logger.hpp"
 #include "tools/thread_safe_queue.hpp"
+
+#include "io/serial_phoenix/include/serial.hpp"
 
 namespace io
 {
@@ -65,6 +66,8 @@ private:
   void callback(const can_frame & frame);
 
   std::string read_yaml(const std::string & config_path);
+
+  serial_phoenix::Serial serial_;
 };
 
 }  // namespace io

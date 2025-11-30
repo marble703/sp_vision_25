@@ -43,7 +43,10 @@ Solver::Solver(const std::string & config_path) : R_gimbal2world_(Eigen::Matrix3
   cv::eigen2cv(distort_coeffs, distort_coeffs_);
 }
 
-Eigen::Matrix3d Solver::R_gimbal2world() const { return R_gimbal2world_; }
+Eigen::Matrix3d Solver::R_gimbal2world() const
+{
+  return R_gimbal2world_;
+}  // note: 毫无意义的 getter ，感觉不如给 public
 
 void Solver::set_R_gimbal2world(const Eigen::Quaterniond & q)
 {
@@ -87,6 +90,7 @@ void Solver::solve(Armor & armor) const
   optimize_yaw(armor);
 }
 
+// world坐标系下重投影装甲板四个顶点到图像平面
 std::vector<cv::Point2f> Solver::reproject_armor(
   const Eigen::Vector3d & xyz_in_world, double yaw, ArmorType type, ArmorName name) const
 {
@@ -126,6 +130,7 @@ std::vector<cv::Point2f> Solver::reproject_armor(
   return image_points;
 }
 
+// 计算前哨站装甲板在给定pitch下的重投影误差
 double Solver::oupost_reprojection_error(Armor armor, const double & pitch)
 {
   // solve
@@ -193,6 +198,7 @@ double Solver::oupost_reprojection_error(Armor armor, const double & pitch)
   return error;
 }
 
+// 优化yaw，使用逆天的暴力搜索
 void Solver::optimize_yaw(Armor & armor) const
 {
   Eigen::Vector3d gimbal_ypr = tools::eulers(R_gimbal2world_, 2, 1, 0);
@@ -217,6 +223,8 @@ void Solver::optimize_yaw(Armor & armor) const
   armor.ypr_in_world[0] = best_yaw;
 }
 
+// 传奇上交代价函数，但是没有用到
+// 在倾斜角度大时，更加注重像素误差；在倾斜角度小时，更加注重角度误差
 double Solver::SJTU_cost(
   const std::vector<cv::Point2f> & cv_refs, const std::vector<cv::Point2f> & cv_pts,
   const double & inclined) const
@@ -251,6 +259,8 @@ double Solver::SJTU_cost(
   return cost;
 }
 
+// 计算前哨站装甲板在给定pitch下的重投影误差
+// 没有用到 inclined
 double Solver::armor_reprojection_error(
   const Armor & armor, double yaw, const double & inclined) const
 {

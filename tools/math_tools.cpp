@@ -10,8 +10,33 @@ double limit_rad(double angle)
   while (angle > CV_PI) angle -= 2 * CV_PI;
   while (angle <= -CV_PI) angle += 2 * CV_PI;
   return angle;
-}
+} 
+// note: 建议改为 fmod
 
+// double limit_rad(double angle) {
+//   // 使用 fmod 确保在 [-2π, 2π] 范围内
+//   angle = fmod(angle, 2 * M_PI);
+  
+//   // 调整到 [-π, π] 范围
+//   if (angle > M_PI) {
+//       angle -= 2 * M_PI;
+//   } else if (angle <= -M_PI) {
+//       angle += 2 * M_PI;
+//   }
+  
+//   return angle;
+// }
+
+/**
+ * @brief 四元数转欧拉角
+ * 
+ * @param q 四元数
+ * @param axis0 旋转轴顺序
+ * @param axis1 旋转轴顺序
+ * @param axis2 旋转轴顺序
+ * @param extrinsic 是否为外部旋转
+ * @return Eigen::Vector3d 欧拉角
+ */
 Eigen::Vector3d eulers(Eigen::Quaterniond q, int axis0, int axis1, int axis2, bool extrinsic)
 {
   if (!extrinsic) std::swap(axis0, axis2);
@@ -182,6 +207,7 @@ double delta_time(
   std::chrono::duration<double> c = a - b;
   return c.count();
 }
+// note: 直接用 double elapsed = std::chrono::duration<double>(a - b).count();
 
 double get_abs_angle(const Eigen::Vector2d & vec1, const Eigen::Vector2d & vec2)
 {
@@ -199,4 +225,6 @@ double limit_min_max(double input, double min, double max)
     return min;
   return input;
 }
+// note: 直接用 double result = std::clamp(value, min_val, max_val);
+
 }  // namespace tools

@@ -101,7 +101,7 @@ public:
 private:
   std::queue<T> queue_;
   size_t max_size_;
-  mutable std::mutex mutex_;
+  mutable std::mutex mutex_; // note: 这个 mutable 删了也能编的过，类内也没有 const，不知道为什么加，不过也没啥影响
   std::condition_variable not_empty_condition_;
   std::function<void(void)> full_handler_;
 };

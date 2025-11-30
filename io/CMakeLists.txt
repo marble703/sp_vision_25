@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 find_package(yaml-cpp REQUIRED)
+find_package(serial_driver REQUIRED)
 
 add_subdirectory(serial)
 
@@ -13,6 +14,7 @@ add_library(io STATIC
     cboard.cpp
     dm_imu/dm_imu.cpp
     gimbal/gimbal.cpp
+    serial_phoenix/src/serial.cpp
 )
 
 # hikrobot
@@ -36,6 +38,17 @@ else()
 endif()
 
 target_link_libraries(io MvCameraControl MVSDK usb-1.0 yaml-cpp serial)
+
+# Ensure includes / targets exported by serial_driver are available to `io`.
+# Some installations export an imported target (e.g. serial_driver::serial_driver),
+# others provide variables like serial_driver_INCLUDE_DIRS. Try common options.
+if(TARGET serial_driver::serial_driver)
+  target_link_libraries(io PUBLIC serial_driver::serial_driver)
+elseif(TARGET serial_driver)
+  target_link_libraries(io PUBLIC serial_driver)
+elseif(DEFINED serial_driver_INCLUDE_DIRS)
+  target_include_directories(io PUBLIC ${serial_driver_INCLUDE_DIRS})
+endif()
 
 ################## 检查 ROS 环境 ##################
 find_package(ament_cmake QUIET)

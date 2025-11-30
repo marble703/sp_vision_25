@@ -408,11 +408,13 @@ void Detector::lightbar_points_corrector(Lightbar & lightbar, const cv::Mat & gr
   cv::normalize(roi, roi, 0, MAX_BRIGHTNESS, cv::NORM_MINMAX);
 
   // 计算质心
+  // 计算归一化ROI的亮度质心，作为光条的中心位置
   const cv::Moments moments = cv::moments(roi);
   const cv::Point2f centroid(
     moments.m10 / moments.m00 + roi_box.x, moments.m01 / moments.m00 + roi_box.y);
 
   // 生成稀疏点云（优化性能）
+  // 仅保留亮度大于1e-3的点
   std::vector<cv::Point2f> points;
   for (int i = 0; i < roi.rows; ++i) {
     for (int j = 0; j < roi.cols; ++j) {

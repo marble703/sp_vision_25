@@ -17,6 +17,9 @@ CBoard::CBoard(const std::string & config_path)
   queue_.pop(data_ahead_);
   queue_.pop(data_behind_);
   tools::logger()->info("[Cboard] Opened.");
+  // serial_ = serial_phoenix::Serial();
+  // serial_.open();
+  
 }
 
 Eigen::Quaterniond CBoard::imu_at(std::chrono::steady_clock::time_point timestamp)
