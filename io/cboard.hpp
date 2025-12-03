@@ -21,6 +21,22 @@ const std::vector<std::string> MODES = { "idle", "auto_aim", "small_buff", "big_
 // 哨兵专有
 enum ShootMode { left_shoot, right_shoot, both_shoot };
 const std::vector<std::string> SHOOT_MODES = { "left_shoot", "right_shoot", "both_shoot" };
+#pragma pack(1)
+
+typedef struct GimbalControl_s {
+    char find_bools;
+    float yaw;
+    float pitch;
+} GimbalControl;
+
+typedef struct Message_phoenix_s {
+    uint8_t header;
+    uint8_t type;
+    uint8_t data[29];
+    uint8_t tail;
+} Message_phoenix;
+
+#pragma pack()
 
 class CBoard {
 public:
@@ -33,7 +49,8 @@ public:
 
     Eigen::Quaterniond imu_at(std::chrono::steady_clock::time_point timestamp);
 
-    void send(Command command) const;
+    // 上发下
+    void send(Command command);
 
 private:
     struct IMUData {
@@ -42,7 +59,7 @@ private:
     };
 
     tools::ThreadSafeQueue<IMUData> queue_; // 必须在can_之前初始化，否则存在死锁的可能
-    SocketCAN can_;
+    // SocketCAN can_;
     IMUData data_ahead_;
     IMUData data_behind_;
 
@@ -52,7 +69,11 @@ private:
 
     std::string read_yaml(const std::string& config_path);
 
+    void read_fun_1(Message_phoenix& msg);
+
     serial_phoenix::Serial serial_;
+    std::vector<uint8_t> read_buffer_;
+    std::vector<uint8_t> write_buffer_;
 };
 
 } // namespace io
