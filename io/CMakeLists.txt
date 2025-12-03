@@ -39,16 +39,8 @@ endif()
 
 target_link_libraries(io MvCameraControl MVSDK usb-1.0 yaml-cpp serial)
 
-# Ensure includes / targets exported by serial_driver are available to `io`.
-# Some installations export an imported target (e.g. serial_driver::serial_driver),
-# others provide variables like serial_driver_INCLUDE_DIRS. Try common options.
-if(TARGET serial_driver::serial_driver)
-  target_link_libraries(io PUBLIC serial_driver::serial_driver)
-elseif(TARGET serial_driver)
-  target_link_libraries(io PUBLIC serial_driver)
-elseif(DEFINED serial_driver_INCLUDE_DIRS)
-  target_include_directories(io PUBLIC ${serial_driver_INCLUDE_DIRS})
-endif()
+# serial_driver 是 ament 包，需要用 ament_target_dependencies 设置 include 和链接
+ament_target_dependencies(io serial_driver)
 
 ################## 检查 ROS 环境 ##################
 find_package(ament_cmake QUIET)
