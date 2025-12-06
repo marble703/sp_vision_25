@@ -23,11 +23,14 @@ enum ShootMode { left_shoot, right_shoot, both_shoot };
 const std::vector<std::string> SHOOT_MODES = { "left_shoot", "right_shoot", "both_shoot" };
 #pragma pack(1)
 
-typedef struct GimbalControl_s {
-    char find_bools;
+typedef struct Autoaim_s {
     float yaw;
     float pitch;
-} GimbalControl;
+    uint8_t enemy_team_color;
+    uint8_t mode;
+    uint8_t rune_flag;
+    float low_gimbal_yaw;
+} Autoaim;
 
 typedef struct Message_phoenix_s {
     uint8_t header;
@@ -47,6 +50,9 @@ public:
 
     CBoard(const std::string& config_path);
 
+    // 启动接收线程
+    void start();
+
     Eigen::Quaterniond imu_at(std::chrono::steady_clock::time_point timestamp);
 
     // 上发下
@@ -65,7 +71,6 @@ private:
 
     int quaternion_canid_, bullet_speed_canid_, send_canid_;
 
-    void callback(const can_frame& frame);
 
     std::string read_yaml(const std::string& config_path);
 

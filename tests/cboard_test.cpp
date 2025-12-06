@@ -30,7 +30,7 @@ int main(int argc, char * argv[])
   while (!exiter.exit()) {
     auto timestamp = std::chrono::steady_clock::now();
 
-    std::this_thread::sleep_for(1ms);
+    std::this_thread::sleep_for(500ms);
 
     Eigen::Quaterniond q = cboard.imu_at(timestamp);
 

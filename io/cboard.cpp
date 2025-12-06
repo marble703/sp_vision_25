@@ -11,32 +11,44 @@ CBoard::CBoard(const std::string& config_path):
     mode(Mode::idle),
     shoot_mode(ShootMode::left_shoot),
     bullet_speed(0),
-    queue_(5000)
-// 注意: callback的运行会早于Cboard构造函数的完成
-{
+    queue_(5000) {
     tools::logger()->info("[Cboard] Waiting for q...");
+    this->read_buffer_.resize(32);
+    this->write_buffer_.resize(32);
+    this->serial_ = serial_phoenix::Serial();
+    auto code     = this->serial_.open("/dev/ttyACM1", nullptr, 32);
+    if (!code) {
+        tools::logger()->warn("[Cboard] Serial port not opened: {}", static_cast<int>(code.code()));
+    }
+    this->start();
     queue_.pop(data_ahead_);
     queue_.pop(data_behind_);
     tools::logger()->info("[Cboard] Opened.");
+}
 
-    this->serial_ = serial_phoenix::Serial();
-    this->serial_.open();
-
-    this->read_buffer_.resize(32);
-    this->write_buffer_.resize(32);
-
+void CBoard::start() {
     std::thread Link_thread([this] {
         while (true) {
             this->serial_.read(this->read_buffer_);
+            // std::cout << "Data received from serial port." << std::endl;
+            // for (auto it = this->read_buffer_.begin(); it != this->read_buffer_.end(); ++it) {
+            //     std::cout << std::hex << static_cast<int>(*it) << " ";
+            // }
+            // std::cout << std::dec;
+            // std::cout << std::endl;
             // 解析数据
-            int type = this->read_buffer_[1];
+            uint8_t type = this->read_buffer_[1];
+            // std::cout << "a." << std::endl;
+
             std::vector<uint8_t> buffer(29);
+
             std::memcpy(buffer.data(), this->read_buffer_.data() + 2, 29);
-            if(type == 0xA0){
+            if (type == 0xb0) {
                 this->read_fun_1(*(Message_phoenix*)this->read_buffer_.data());
-            }
-            else{
-                std::cout << "Unknown message type: " << type << std::endl;
+                // std::cout << "Received IMU data." << std::endl;
+            } else {
+                // std::cout << "Unknown message type: " << std::hex << static_cast<int>(type)
+                //           << std::dec << std::endl;
             }
         }
     });
@@ -77,50 +89,6 @@ void CBoard::send(Command command) {
     this->serial_.write(this->write_buffer_);
 }
 
-void CBoard::callback(const can_frame& frame) {
-    // auto timestamp = std::chrono::steady_clock::now();
-
-    // if (frame.can_id == quaternion_canid_) {
-    //     // 新协议: 原来的四元数被替换为两个角度 (yaw, pitch)，分别位于字节 0~1 和
-    //     // 2~3， 使用 int16 / 1e4 表示（单位: rad）。将 yaw/pitch
-    //     // 转换为四元数并入队。
-    //     double yaw   = (int16_t)((frame.data[0] << 8) | frame.data[1]) / 1e4;
-    //     double pitch = (int16_t)((frame.data[2] << 8) | frame.data[3]) / 1e4;
-
-    //     // 假定无 roll，按先 yaw(绕 Z) 再 pitch(绕 Y) 的顺序构造旋转。
-    //     Eigen::AngleAxisd yaw_aa(yaw, Eigen::Vector3d::UnitZ());
-    //     Eigen::AngleAxisd pitch_aa(pitch, Eigen::Vector3d::UnitY());
-    //     Eigen::Quaterniond q = (yaw_aa * pitch_aa).normalized();
-
-    //     queue_.push({ q, timestamp });
-    // }
-
-    // else if (frame.can_id == bullet_speed_canid_)
-    // {
-    //     bullet_speed = (int16_t)(frame.data[0] << 8 | frame.data[1]) / 1e2;
-    //     mode         = Mode(frame.data[2]);
-    //     shoot_mode   = ShootMode(frame.data[3]);
-    //     // 新协议: ft_angle 使用原始 int16 表示，单位为 rad（无 1e4 缩放）
-    //     ft_angle = (int16_t)((frame.data[4] << 8) | frame.data[5]);
-
-    //     // 限制日志输出频率为1Hz
-    //     static auto last_log_time = std::chrono::steady_clock::time_point::min();
-    //     auto now                  = std::chrono::steady_clock::now();
-
-    //     if (bullet_speed > 0 && tools::delta_time(now, last_log_time) >= 1.0) {
-    //         tools::logger()->info(
-    //             "[CBoard] Bullet speed: {:.2f} m/s, Mode: {}, "
-    //             "Shoot mode: {}, FT angle: {:.2f} rad",
-    //             bullet_speed,
-    //             MODES[mode],
-    //             SHOOT_MODES[shoot_mode],
-    //             ft_angle
-    //         );
-    //         last_log_time = now;
-    //     }
-    // }
-}
-
 // 实现方式有待改进
 std::string CBoard::read_yaml(const std::string& config_path) {
     auto yaml = tools::load(config_path);
@@ -139,9 +107,11 @@ std::string CBoard::read_yaml(const std::string& config_path) {
 void CBoard::read_fun_1(Message_phoenix& msg) {
     auto timestamp = std::chrono::steady_clock::now();
 
-    GimbalControl data = reinterpret_cast<GimbalControl&>(msg);
-    float yaw = data.yaw;
-    float pitch = data.pitch;
+    Autoaim_s data = reinterpret_cast<Autoaim_s&>(msg.data);
+    float yaw      = data.yaw;
+    float pitch    = data.pitch;
+
+    // std::cout << "Yaw: " << yaw << ", Pitch: " << pitch << std::endl;
     Eigen::AngleAxisd yaw_aa(yaw, Eigen::Vector3d::UnitZ());
     Eigen::AngleAxisd pitch_aa(pitch, Eigen::Vector3d::UnitY());
     Eigen::Quaterniond q = (yaw_aa * pitch_aa).normalized();
