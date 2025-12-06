@@ -77,6 +77,9 @@ int main(int argc, char * argv[])
     auto command = aimer.aim(targets, t, cboard.bullet_speed);
 
     cboard.send(command);
+    std::cout << fmt::format(
+      "Mode: {}, Yaw: {:.2f} Pitch: {:.2f} Fire: {}",
+      io::MODES[mode], command.yaw, command.pitch, command.control ? "Yes" : "No") << std::endl;
   }
 
   return 0;
