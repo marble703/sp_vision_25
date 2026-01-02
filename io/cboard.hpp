@@ -9,7 +9,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include "io/command.hpp"
-#include "io/socketcan.hpp"
+// #include "io/socketcan.hpp"
 #include "tools/logger.hpp"
 #include "tools/thread_safe_queue.hpp"
 
