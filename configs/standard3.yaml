@@ -1,5 +1,4 @@
 enemy_color: "red"
-# enemy_color: "blue"
 
 #####-----神经网络参数-----#####
 yolo_name: yolov5
@@ -39,8 +38,8 @@ outpost_max_temp_lost_count: 75
 #####-----aimer参数-----#####
 yaw_offset: 2 # degree -2.5
 pitch_offset: 6.5 # degree 2
-comming_angle: 55 # degree
-leaving_angle: 20 # degree
+comming_angle: 15 # degree
+leaving_angle: 15 # degree
 decision_speed: 7 # rad/s
 high_speed_delay_time: 0.0 # s
 low_speed_delay_time: 0.0 # s planner use this value
@@ -62,9 +61,9 @@ vid_pid: "2bdf:0001"
 #  0  0  1
 R_gimbal2imubody: [1, 0, 0, 0, 1, 0, 0, 0, 1]
 
-# 重投影误差: 0.1820px
-camera_matrix: [1785.4881526822305, 0, 672.4806478241826, 0, 1785.026019470562, 559.89603224794314, 0, 0, 1]
-distort_coeffs: [-0.076005079619881746, 0.11182817466388446, 0.0005362204787722057, -0.0027546300984895122, 0]
+# 重投影误差: 0.1820px(hero_new_20260102)
+camera_matrix: [1587.90548, 0, 655.810478, 0, 1585.62905, 511.978281, 0, 0, 1]
+distort_coeffs: [-0.0797859098, 0.34035472, -0.0012553872, 0.0000666174244, -0.472207743]
 
 # 相机同理想情况的偏角: yaw1.44 pitch-7.28 roll0.96 degree
 # 标定板到世界坐标系原点的水平距离: 1.13 m

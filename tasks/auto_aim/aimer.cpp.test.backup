@@ -1,6 +1,5 @@
 #include "aimer.hpp"
 
-#include <iostream>
 #include <yaml-cpp/yaml.h>
 
 #include <cmath>
@@ -162,11 +161,14 @@ AimPoint Aimer::choose_aim_point(const Target& target) {
     std::vector<Eigen::Vector4d> armor_xyza_list = target.armor_xyza_list();
     auto armor_num                               = armor_xyza_list.size();
     // 如果装甲板未发生过跳变，则只有当前装甲板的位置已知
-    if (!target.jumped)
+    if (!target.jumped) {
+        std::cout << "target not jumped" << std::endl;
         return { true, armor_xyza_list[0] };
+    }
 
     // 整车旋转中心的球坐标yaw
     auto center_yaw = std::atan2(ekf_x[2], ekf_x[0]);
+    std::cout << "center_yaw = " << center_yaw << std::endl;
 
     // 如果delta_angle为0，则该装甲板中心和整车中心的连线在世界坐标系的xy平面过原点
     std::vector<double> delta_angle_list;
@@ -174,12 +176,17 @@ AimPoint Aimer::choose_aim_point(const Target& target) {
         auto delta_angle = tools::limit_rad(armor_xyza_list[i][3] - center_yaw);
         delta_angle_list.emplace_back(delta_angle);
     }
-    double coming_angle, leaving_angle;
 
     // 不考虑小陀螺
     if (std::abs(target.ekf_x()[8]) <= 2 && target.name != ArmorName::outpost) {
         // 选择在可射击范围内的装甲板
-        // 如果旋转速度大于 0.2 rad/s，使用 coming_angle_ 和 leaving_angle_
+        std::vector<int> id_list;
+        // for (int i = 0; i < armor_num; i++) {
+        //     if (std::abs(delta_angle_list[i]) > 60 / 57.3)
+        //         continue;
+        //     id_list.push_back(i);
+        // }
+        double coming_angle, leaving_angle;
         if (target.name == ArmorName::outpost) {
             coming_angle  = 70 / 57.3;
             leaving_angle = 30 / 57.3;
@@ -188,35 +195,19 @@ AimPoint Aimer::choose_aim_point(const Target& target) {
             leaving_angle = leaving_angle_;
         }
 
-        std::vector<int> id_list;
-        if (std::abs(ekf_x[7]) > 0.4) {
-            for (int i = 0; i < armor_num; i++) {
-                if (std::abs(delta_angle_list[i]) > coming_angle) {
-                    std::cout << "delta_angle_list[" << i << "] = " << delta_angle_list[i]
-                              << std::endl;
-
-
-                    continue;
-                } else {
-                    std::cout << "deprated delta_angle_list[" << i << "] = " << delta_angle_list[i]
-                              << std::endl;
-                }
-                if (ekf_x[7] > 0 && delta_angle_list[i] < leaving_angle)
-                    std::cout << "accept delta_angle_list[" << i << "] = " << delta_angle_list[i]
-                              << std::endl;
+        for (int i = 0; i < armor_num; i++) {
+            std::cout << "delta_angle_list[i] = " << delta_angle_list[i] << std::endl;
+            std::cout << "coming_angle = " << coming_angle << std::endl;
+            std::cout << "leaving_angle = " << leaving_angle << std::endl;
+            if (std::abs(delta_angle_list[i]) > coming_angle
+                && std::abs(delta_angle_list[i]) > leaving_angle)
+                continue;
+            if (ekf_x[7] > 0 && delta_angle_list[i] < leaving_angle)
                 return { true, armor_xyza_list[i] };
-                if (ekf_x[7] < 0 && delta_angle_list[i] > -leaving_angle)
-                    std::cout << "accept delta_angle_list[" << i << "] = " << delta_angle_list[i]
-                              << std::endl;
+            if (ekf_x[7] < 0 && delta_angle_list[i] > -leaving_angle)
                 return { true, armor_xyza_list[i] };
-            }
-        } else {
-            for (int i = 0; i < armor_num; i++) {
-                if (std::abs(delta_angle_list[i]) > 60 / 57.3)
-                    continue;
-                id_list.push_back(i);
-            }
         }
+
         // 绝无可能
         if (id_list.empty()) {
             tools::logger()->warn("Empty id list!");
@@ -231,26 +222,37 @@ AimPoint Aimer::choose_aim_point(const Target& target) {
             if (lock_id_ != id0 && lock_id_ != id1)
                 lock_id_ =
                     (std::abs(delta_angle_list[id0]) < std::abs(delta_angle_list[id1])) ? id0 : id1;
+
+            std::cout << "locking " << lock_id_ << std::endl;
+            return { true, armor_xyza_list[lock_id_] };
         }
 
         // 只有一个装甲板在可射击范围内时，退出锁定模式
         lock_id_ = -1;
+        std::cout << "locking out = " << lock_id_ << std::endl;
         return { true, armor_xyza_list[id_list[0]] };
     }
 
-    std::cout << "center_yaw = " << center_yaw << std::endl;
+    // double coming_angle, leaving_angle;
+    // if (target.name == ArmorName::outpost) {
+    //     coming_angle  = 70 / 57.3;
+    //     leaving_angle = 30 / 57.3;
+    // } else {
+    //     coming_angle  = coming_angle_;
+    //     leaving_angle = leaving_angle_;
+    // }
 
-    // 在小陀螺时，一侧的装甲板不断出现，另一侧的装甲板不断消失，显然前者被打中的概率更高
-    for (int i = 0; i < armor_num; i++) {
-        if (std::abs(delta_angle_list[i]) > coming_angle)
-            continue;
-        if (ekf_x[7] > 0 && delta_angle_list[i] < leaving_angle)
-            return { true, armor_xyza_list[i] };
-        if (ekf_x[7] < 0 && delta_angle_list[i] > -leaving_angle)
-            return { true, armor_xyza_list[i] };
-    }
+    // // 在小陀螺时，一侧的装甲板不断出现，另一侧的装甲板不断消失，显然前者被打中的概率更高
+    // for (int i = 0; i < armor_num; i++) {
+    //     if (std::abs(delta_angle_list[i]) > coming_angle)
+    //         continue;
+    //     if (ekf_x[7] > 0 && delta_angle_list[i] < leaving_angle)
+    //         return { true, armor_xyza_list[i] };
+    //     if (ekf_x[7] < 0 && delta_angle_list[i] > -leaving_angle)
+    //         return { true, armor_xyza_list[i] };
+    // }
 
-    return { false, armor_xyza_list[0] };
+    return { false, armor_xyza_list[0], center_yaw };
 }
 
 } // namespace auto_aim

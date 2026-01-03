@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
     }
 
     tools::Exiter exiter;
-    tools::Plotter plotter;
+    // tools::Plotter plotter("127.0.0.1", 10006);
     tools::Recorder recorder;
 
     io::CBoard cboard(config_path);
@@ -85,6 +85,11 @@ int main(int argc, char* argv[]) {
             command.shoot = true;
         }
 
+        if (command.shoot == false && command.yaw == 0 && command.pitch == 0) {
+            command = last_command;
+            command.shoot = false;
+        }
+
         if (command.control) {
             last_command = command;
         }
@@ -119,22 +124,29 @@ int main(int argc, char* argv[]) {
             { 10, 90 },
             { 255, 255, 255 }
         );
+        tools::draw_text(
+            img,
+            fmt::format("tracker state: {}", tracker.state()),
+            { 10, 120 },
+            { 0, 255, 0 }
+        );
 
-        nlohmann::json data;
-        data["armor_num"] = armors.size();
-        if (!armors.empty()) {
-            const auto& armor      = armors.front();
-            data["armor_x"]        = armor.xyz_in_world[0];
-            data["armor_y"]        = armor.xyz_in_world[1];
-            data["armor_yaw"]      = armor.ypr_in_world[0] * 57.3;
-            data["armor_yaw_raw"]  = armor.yaw_raw * 57.3;
-            data["armor_center_x"] = armor.center_norm.x;
-            data["armor_center_y"] = armor.center_norm.y;
-        }
+        // nlohmann::json data;
+        // data["armor_num"] = armors.size();
+        // if (!armors.empty()) {
+        //     const auto& armor      = armors.front();
+        //     data["armor_x"]        = armor.xyz_in_world[0];
+        //     data["armor_y"]        = armor.xyz_in_world[1];
+        //     data["armor_yaw"]      = armor.ypr_in_world[0] * 57.3;
+        //     data["armor_yaw_raw"]  = armor.yaw_raw * 57.3;
+        //     data["armor_center_x"] = armor.center_norm.x;
+        //     data["armor_center_y"] = armor.center_norm.y;
+        // }
 
-        data["gimbal_yaw"] = yaw * 57.3;
-        data["cmd_yaw"]    = command.yaw * 57.3;
-        data["shoot"]      = command.shoot;
+        // data["gimbal_yaw"]    = yaw * 57.3;
+        // data["cmd_yaw"]       = command.yaw * 57.3;
+        // data["shoot"]         = command.shoot;
+        // data["tracker_state"] = tracker.state();
 
         if (!targets.empty()) {
             auto target                                  = targets.front();
@@ -155,35 +167,35 @@ int main(int argc, char* argv[]) {
             }
 
             Eigen::VectorXd x = target.ekf_x();
-            data["x"]         = x[0];
-            data["vx"]        = x[1];
-            data["y"]         = x[2];
-            data["vy"]        = x[3];
-            data["z"]         = x[4];
-            data["vz"]        = x[5];
-            data["a"]         = x[6] * 57.3;
-            data["w"]         = x[7];
-            data["r"]         = x[8];
-            data["l"]         = x[9];
-            data["h"]         = x[10];
-            data["last_id"]   = target.last_id;
+            // data["x"]         = x[0];
+            // data["vx"]        = x[1];
+            // data["y"]         = x[2];
+            // data["vy"]        = x[3];
+            // data["z"]         = x[4];
+            // data["vz"]        = x[5];
+            // data["a"]         = x[6] * 57.3;
+            // data["w"]         = x[7];
+            // data["r"]         = x[8];
+            // data["l"]         = x[9];
+            // data["h"]         = x[10];
+            // data["last_id"]   = target.last_id;
 
             auto ekf = target.ekf();
 
-            data["residual_yaw"]        = ekf.data.at("residual_yaw");
-            data["residual_pitch"]      = ekf.data.at("residual_pitch");
-            data["residual_distance"]   = ekf.data.at("residual_distance");
-            data["residual_angle"]      = ekf.data.at("residual_angle");
-            data["nis"]                 = ekf.data.at("nis");
-            data["nees"]                = ekf.data.at("nees");
-            data["nis_fail"]            = ekf.data.at("nis_fail");
-            data["nees_fail"]           = ekf.data.at("nees_fail");
-            data["recent_nis_failures"] = ekf.data.at("recent_nis_failures");
+            // data["residual_yaw"]        = ekf.data.at("residual_yaw");
+            // data["residual_pitch"]      = ekf.data.at("residual_pitch");
+            // data["residual_distance"]   = ekf.data.at("residual_distance");
+            // data["residual_angle"]      = ekf.data.at("residual_angle");
+            // data["nis"]                 = ekf.data.at("nis");
+            // data["nees"]                = ekf.data.at("nees");
+            // data["nis_fail"]            = ekf.data.at("nis_fail");
+            // data["nees_fail"]           = ekf.data.at("nees_fail");
+            // data["recent_nis_failures"] = ekf.data.at("recent_nis_failures");
         }
 
-        plotter.plot(data);
+        // plotter.plot(data);
 
-        cv::resize(img, img, {}, 0.5, 0.5);
+        // cv::resize(img, img, {}, 0.5, 0.5);
         cv::imshow("reprojection", img);
         auto key = cv::waitKey(1);
         if (key == 'q')
