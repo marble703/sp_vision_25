@@ -11,6 +11,9 @@ public:
   bool exit() const;
 };
 
+// 全局函数，用于检查是否需要退出
+bool should_exit();
+
 }  // namespace tools
 
 #endif  // TOOLS__EXITER_HPP

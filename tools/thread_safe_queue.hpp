@@ -62,6 +62,25 @@ public:
     return std::move(value);
   }
 
+  // 带超时的 pop，返回 true 表示成功获取数据，false 表示超时
+  template<typename Rep, typename Period>
+  bool try_pop_for(T & value, const std::chrono::duration<Rep, Period>& timeout)
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+
+    if (!not_empty_condition_.wait_for(lock, timeout, [this] { return !queue_.empty(); })) {
+      return false;  // 超时
+    }
+
+    if (queue_.empty()) {
+      return false;
+    }
+
+    value = queue_.front();
+    queue_.pop();
+    return true;
+  }
+
   T front()
   {
     std::unique_lock<std::mutex> lock(mutex_);

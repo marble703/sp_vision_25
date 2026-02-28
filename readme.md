@@ -351,3 +351,9 @@ DPS = 单位时间射击窗口占比 \times 射频 \times 单发子弹伤害
 [![Star History Chart](https://api.star-history.com/svg?repos=TongjiSuperPower/sp_vision_25&type=Date)](https://www.star-history.com/#TongjiSuperPower/sp_vision_25&Date)
 
 7 vyaw
+
+  // x vx y vy z vz a w r l h
+  // a: angle
+  // w: angular velocity
+  // l: r2 - r1
+  // h: z2 - z1

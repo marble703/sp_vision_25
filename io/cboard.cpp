@@ -1,6 +1,7 @@
 #include "cboard.hpp"
 
 #include "Eigen/src/Core/AssignEvaluator.h"
+#include "tools/exiter.hpp"
 
 #include <cstdint>
 #include <iostream>
@@ -25,15 +26,40 @@ CBoard::CBoard(const std::string& config_path):
         tools::logger()->warn("[Cboard] Serial port not opened: {}", static_cast<int>(code.code()));
     }
     this->start();
-    queue_.pop(data_ahead_);
-    queue_.pop(data_behind_);
+    
+    // 使用带超时的等待，以便能够响应退出信号
+    while (!tools::should_exit()) {
+        if (queue_.try_pop_for(data_ahead_, std::chrono::milliseconds(100))) {
+            break;
+        }
+    }
+    if (tools::should_exit()) {
+        tools::logger()->warn("[Cboard] Initialization interrupted by user.");
+        return;
+    }
+    
+    while (!tools::should_exit()) {
+        if (queue_.try_pop_for(data_behind_, std::chrono::milliseconds(100))) {
+            break;
+        }
+    }
+    if (tools::should_exit()) {
+        tools::logger()->warn("[Cboard] Initialization interrupted by user.");
+        return;
+    }
+    
     tools::logger()->info("[Cboard] Opened.");
 }
 
 void CBoard::start() {
     std::thread Link_thread([this] {
-        while (true) {
-            this->serial_.read(this->read_buffer_);
+        while (!tools::should_exit()) {
+            auto code = this->serial_.read(this->read_buffer_);
+            if (!code) {
+                // 串口读取失败，休眠后重试，避免忙等待
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                continue;
+            }
             // std::cout << "Data received from serial port." << std::endl;
             // for (auto it = this->read_buffer_.begin(); it != this->read_buffer_.end(); ++it) {
             //     std::cout << std::hex << static_cast<int>(*it) << " ";
